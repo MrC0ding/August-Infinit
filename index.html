@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Radio August Infinit</title>
+    <style>
+        :root { --orange: #ff4500; --gold: #ffd700; }
+        
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #ff9d00, #ffeb3b, #00d4ff);
+            font-family: sans-serif;
+            overflow: hidden;
+            touch-action: manipulation; /* Previne zoom-ul accidental pe butoane */
+        }
+
+        .pulsing { animation: pulse-bg 0.5s infinite alternate; }
+        @keyframes pulse-bg {
+            0% { filter: brightness(100%); }
+            100% { filter: brightness(120%); }
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 25px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            border: 5px solid var(--orange);
+            width: 90%; /* Se adaptează pe ecranul telefonului */
+            max-width: 350px;
+            z-index: 100;
+        }
+
+        .day { font-size: 5rem; font-weight: 900; color: #222; margin: 0; text-shadow: 2px 2px var(--gold); }
+        
+        .countdown {
+            background: #000;
+            color: #39ff14;
+            padding: 10px;
+            border-radius: 12px;
+            font-family: monospace;
+            margin: 15px 0;
+            font-size: 0.8rem;
+        }
+
+        .player-box {
+            background: #222;
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+        }
+
+        .controls { display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
+        
+        .btn-nav { background: #444; border: none; color: white; width: 45px; height: 45px; border-radius: 50%; font-size: 1rem; }
+        .btn-play { background: #28a745; border: none; width: 65px; height: 65px; border-radius: 50%; font-size: 1.5rem; color: white; box-shadow: 0 0 10px #28a745; }
+
+        .money {
+            position: absolute;
+            top: -50px;
+            z-index: 50;
+            animation: fall linear forwards;
+            pointer-events: none;
+        }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="main-card">
+        <p style="color:var(--orange); font-weight:bold; margin:0;">AUGUST INFINIT</p>
+        <h1 id="date-display" class="day">31</h1>
+        
+        <div class="countdown">
+            <div id="timer">--:--:--:--</div>
+        </div>
+
+        <div class="player-box">
+            <div id="track-name" style="font-size:0.8rem; color:var(--gold); margin-bottom:10px;">Selectează Vibe-ul</div>
+            <div class="controls">
+                <button class="btn-nav" onclick="prevSong()">⏮️</button>
+                <button id="play-btn" class="btn-play" onclick="togglePlay()">▶️</button>
+                <button class="btn-nav" onclick="nextSong()">⏭️</button>
+            </div>
+        </div>
+        <p style="font-size:0.6rem; color:#888; margin-top:10px;">*Pe mobil, muzica pornește doar la apăsare.</p>
+    </div>
+
+    <audio id="audio-element"></audio>
+
+    <script>
+        const playlist = [
+            { name: "Tzanca Uraganu - Vara-i vara", file: "vara-i-vara.mp3" },
+            { name: "Babasha - Marae", file: "BABASHA - Marae _ OfficialVideo.mp3" },
+            { name: "Dani Mocanu - Bucurestiul doarme", file: "Dani Mocanu - Bucurestiul doarme  Official Video.mp3" },
+            { name: "Adrian Norocel - Ola Creola ☀️🌊", file: "Adrian Norocel - Ola Creola   Official Video.mp3" },
+            { name: "Florin Salam - De tine m-am indragostit", file: "FLORIN SALAM DE TINE M-AM INDRAGOSTIT [oficial video].mp3" },
+            { name: "Gheboasa X Alberto G. - Baba", file: "GHEBOASA x Alberto Guta - Baba _ Official Video.mp3" },
+        ];
+
+        let currentTrack = 0;
+        const audio = document.getElementById('audio-element');
+        const playBtn = document.getElementById('play-btn');
+
+        function loadTrack(index) {
+            audio.src = playlist[index].file;
+            document.getElementById('track-name').innerText = playlist[index].name;
+        }
+
+        function togglePlay() {
+            if (audio.paused) {
+                audio.play();
+                playBtn.innerText = "⏸️";
+                document.body.classList.add('pulsing');
+                if(!window.mInt) window.mInt = setInterval(createMoney, 200);
+            } else {
+                audio.pause();
+                playBtn.innerText = "▶️";
+                document.body.classList.remove('pulsing');
+                clearInterval(window.mInt);
+                window.mInt = null;
+            }
+        }
+
+        function nextSong() { currentTrack = (currentTrack + 1) % playlist.length; loadTrack(currentTrack); audio.play(); }
+        function prevSong() { currentTrack = (currentTrack - 1 + playlist.length) % playlist.length; loadTrack(currentTrack); audio.play(); }
+
+        function createMoney() {
+            const m = document.createElement('div');
+            m.className = 'money';
+            m.innerText = ['💵', '💶', '💸', '💰'][Math.floor(Math.random()*4)];
+            m.style.left = Math.random() * 100 + "vw";
+            m.style.fontSize = "25px";
+            m.style.animationDuration = "3s";
+            document.body.appendChild(m);
+            setTimeout(() => m.remove(), 3000);
+        }
+
+        function update() {
+            const start = new Date('2025-08-31');
+            const target = new Date('June 15, 2026 00:00:00');
+            const now = new Date();
+            document.getElementById('date-display').innerText = 31 + Math.floor((now - start) / 86400000);
+            const diff = target - now;
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            document.getElementById('timer').innerText = `${d}z : ${h}h : ${m}m : ${s}s până la vară!`;
+        }
+
+        loadTrack(0);
+        setInterval(update, 1000);
+        update();
+    </script>
+</body>
+</html>
