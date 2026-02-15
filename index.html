@@ -26,7 +26,6 @@
             width: 95%; max-width: 360px; padding: 20px 0;
         }
 
-        /* LOGO MARE SUS */
         .header-logo {
             width: 45vw; max-width: 150px; height: auto; margin-bottom: 15px;
             filter: drop-shadow(0 0 10px rgba(255, 69, 0, 0.5));
@@ -38,7 +37,6 @@
         .pulsing { animation: pulse-bg 0.5s infinite alternate; }
         @keyframes pulse-bg { 0% { filter: brightness(100%); } 100% { filter: brightness(115%); } }
 
-        /* CARDUL PRINCIPAL */
         .main-card {
             background: rgba(255, 255, 255, 0.95); padding: 20px;
             border-radius: 25px; box-shadow: 0 15px 40px rgba(0,0,0,0.3);
@@ -59,7 +57,6 @@
         .btn-nav { background: #333; border: none; color: white; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; }
         .btn-play { background: #28a745; border: none; width: 65px; height: 65px; border-radius: 50%; font-size: 1.6rem; color: white; box-shadow: 0 0 15px rgba(40,167,69,0.4); cursor: pointer; }
 
-        /* BUTOANE ADAUGARE */
         .add-actions { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
         .btn-add { 
             background: #444; border: none; color: white; padding: 10px; 
@@ -72,7 +69,6 @@
         .money { position: absolute; top: -50px; z-index: 50; animation: fall linear forwards; pointer-events: none; }
         @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
 
-        /* REGLAJ PENTRU ECRANE MICI */
         @media (max-height: 650px) {
             .day { font-size: 3.5rem; }
             .header-logo { max-width: 110px; }
@@ -131,20 +127,31 @@
 
         function loadTrack(index) {
             if(customPlaylist.length === 0) return;
+            audio.pause();
             audio.src = customPlaylist[index].file;
-            audio.load();
+            audio.load(); // Esențial pentru mobil
             document.getElementById('track-name').innerText = customPlaylist[index].name;
         }
 
         async function togglePlay() {
             if (audio.paused) {
                 try {
+                    // Verificăm dacă sursa e gata
+                    if (audio.readyState < 2) {
+                        await new Promise((resolve) => {
+                            audio.oncanplaythrough = resolve;
+                            audio.load();
+                        });
+                    }
                     await audio.play();
                     playBtn.innerText = "⏸️";
                     document.body.classList.add('pulsing');
                     if(!window.mInt) window.mInt = setInterval(createMoney, 200);
                 } catch (err) { 
-                    alert("Eroare: Link-ul nu e valid sau fișierul nu poate fi redat."); 
+                    console.log("Eroare redare: ", err);
+                    // Re-încercăm o dată dacă e o eroare de rețea
+                    audio.load();
+                    setTimeout(() => audio.play(), 500);
                 }
             } else {
                 audio.pause();
@@ -154,41 +161,41 @@
             }
         }
 
-        function nextSong() { currentTrack = (currentTrack + 1) % customPlaylist.length; loadTrack(currentTrack); audio.play(); }
-        function prevSong() { currentTrack = (currentTrack - 1 + customPlaylist.length) % customPlaylist.length; loadTrack(currentTrack); audio.play(); }
+        function nextSong() { 
+            currentTrack = (currentTrack + 1) % customPlaylist.length; 
+            loadTrack(currentTrack); 
+            // Pe mobil așteptăm un pic buffer-ul înainte de play automat
+            setTimeout(() => { if(playBtn.innerText === "⏸️") audio.play(); else togglePlay(); }, 300);
+        }
 
-        // 1. ADAUGARE PRIN LINK
+        function prevSong() { 
+            currentTrack = (currentTrack - 1 + customPlaylist.length) % customPlaylist.length; 
+            loadTrack(currentTrack); 
+            setTimeout(() => { if(playBtn.innerText === "⏸️") audio.play(); else togglePlay(); }, 300);
+        }
+
         function addNewTrack() {
             let name = prompt("Nume piesă:");
-            let url = prompt("Link direct .mp3 (Ex: de pe Discord/Dropbox):");
+            let url = prompt("Link direct .mp3:");
             if (url) url = url.trim();
-
             if (name && url) {
                 customPlaylist.push({ name: "🔗 " + name, file: url });
                 localStorage.setItem('myAugustPlaylist', JSON.stringify(customPlaylist));
                 currentTrack = customPlaylist.length - 1;
                 loadTrack(currentTrack);
-                audio.play();
+                setTimeout(() => togglePlay(), 500);
             }
         }
 
-        // 2. UPLOAD DIN TELEFON
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 const fileURL = URL.createObjectURL(file);
                 const fileName = file.name.replace('.mp3', '');
-                
                 customPlaylist.push({ name: "📁 " + fileName, file: fileURL });
                 currentTrack = customPlaylist.length - 1;
                 loadTrack(currentTrack);
-                
-                // Forțăm Play-ul
-                setTimeout(() => {
-                    audio.play();
-                    playBtn.innerText = "⏸️";
-                    document.body.classList.add('pulsing');
-                }, 100);
+                setTimeout(() => togglePlay(), 500);
             }
         }
 
